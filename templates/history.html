@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History — RidgeScan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:      #F97316;
+      --orange-dark: #EA6500;
+      --orange-light:#FFF3E8;
+      --orange-mid:  #FED7AA;
+      --text:        #1C1917;
+      --text-muted:  #78716C;
+      --border:      #E7E5E4;
+      --bg:          #FAFAF8;
+      --white:       #FFFFFF;
+      --radius:      14px;
+      --shadow:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 700; color: var(--text); text-decoration: none;
+    }
+    .nav-brand-dot {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--orange);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link {
+      padding: 7px 16px; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted); text-decoration: none; transition: all 0.15s;
+    }
+    .nav-link:hover  { background: var(--orange-light); color: var(--orange-dark); }
+    .nav-link.active { background: var(--orange-light); color: var(--orange); font-weight: 600; }
+
+    /* ── Page ─────────────────────────────────────────────────── */
+    .page { max-width: 1040px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    .page-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 16px; margin-bottom: 28px;
+    }
+    .page-title {
+      font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;
+    }
+    .page-sub { font-size: 14px; color: var(--text-muted); }
+
+    .header-btns { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .btn {
+      padding: 9px 18px; border-radius: 8px;
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; border: none;
+    }
+    .btn-outline {
+      background: white; color: var(--text); border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-ghost {
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .btn-ghost:hover { border-color: #DC2626; color: #DC2626; }
+
+    /* ── Summary chips ────────────────────────────────────────── */
+    .summary-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .chip {
+      padding: 6px 14px; border-radius: 100px;
+      background: white; border: 1px solid var(--border);
+      font-size: 13px; color: var(--text-muted);
+    }
+    .chip strong { color: var(--orange); font-weight: 700; }
+
+    /* ── Filters ──────────────────────────────────────────────── */
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-pill {
+      padding: 6px 14px; border-radius: 100px;
+      background: white; border: 1px solid var(--border);
+      font-size: 13px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; font-family: 'Outfit', sans-serif;
+    }
+    .filter-pill:hover,
+    .filter-pill.active {
+      background: var(--orange-light);
+      border-color: var(--orange-mid);
+      color: var(--orange-dark); font-weight: 600;
+    }
+
+    /* ── Table ────────────────────────────────────────────────── */
+    .table-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead {
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 12px 18px; text-align: left;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border); transition: background 0.1s;
+      animation: rowIn 0.3s ease both;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg); }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    td { padding: 13px 18px; font-size: 14px; vertical-align: middle; }
+
+    /* Blood group pill */
+    .blood-pill {
+      display: inline-block; padding: 5px 14px; border-radius: 6px;
+      background: var(--orange-light); color: var(--orange-dark);
+      font-weight: 700; font-size: 15px; border: 1px solid var(--orange-mid);
+    }
+
+    /* Name cell */
+    .td-name { font-weight: 600; }
+
+    /* Muted cells */
+    .td-muted { color: var(--text-muted); font-size: 13px; }
+
+    /* Long text cells */
+    .td-trunc {
+      max-width: 160px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+      color: var(--text-muted); font-size: 13px;
+    }
+
+    /* Delete button */
+    .del-btn {
+      background: none; border: 1px solid transparent;
+      color: var(--text-muted); cursor: pointer; padding: 5px 8px;
+      border-radius: 6px; font-size: 14px; transition: all 0.15s;
+    }
+    .del-btn:hover { border-color: #FCA5A5; color: #DC2626; background: #FEF2F2; }
+
+    /* ── Empty state ──────────────────────────────────────────── */
+    .empty { padding: 72px 32px; text-align: center; }
+    .empty-icon  { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+    .empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .empty-sub   { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+    .btn-goto {
+      display: inline-block; padding: 10px 24px;
+      background: var(--orange); color: white; border-radius: 8px;
+      font-weight: 600; font-size: 14px; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-goto:hover { background: var(--orange-dark); }
+
+    /* ── Loading spinner ──────────────────────────────────────── */
+    .loading {
+      padding: 48px; text-align: center; color: var(--text-muted); font-size: 14px;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav, .page { padding-left: 16px; padding-right: 16px; }
+      .th-age, .td-age,
+      .th-gender, .td-gender,
+      .th-email, .td-email { display: none; }
+    }
+    @media (max-width: 480px) {
+      .th-time, .td-time { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-dot">🫆</div>
+    RidgeScan
+  </a>
+  <div class="nav-links">
+    <a href="/"        class="nav-link">Predict</a>
+    <a href="/history" class="nav-link active">History</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Prediction History</div>
+      <div class="page-sub" id="pageSubtitle">Loading records…</div>
+    </div>
+    <div class="header-btns">
+      <button class="btn btn-outline" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-ghost"   onclick="clearAll()">Clear All</button>
+    </div>
+  </div>
+
+  <div class="summary-row" id="summaryRow"></div>
+  <div class="filter-row"  id="filterRow"></div>
+
+  <div class="table-card">
+    <!-- Loading state -->
+    <div class="loading" id="loadingState">Loading…</div>
+
+    <table id="histTable" style="display:none">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th class="th-age">Age</th>
+          <th class="th-gender">Gender</th>
+          <th>Blood Group</th>
+          <th class="th-email th-trunc">Email</th>
+          <th class="th-time">Date &amp; Time</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="histBody"></tbody>
+    </table>
+
+    <div class="empty" id="emptyState" style="display:none">
+      <div class="empty-icon">🔬</div>
+      <div class="empty-title">No predictions yet</div>
+      <div class="empty-sub">Analyze a fingerprint to see results here.</div>
+      <a href="/" class="btn-goto">Go to Predict →</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /*
+    Data comes from FastAPI's /history endpoint which queries the
+    Supabase result_details view. Fields per record:
+      result_id, name, age, gender, email, blood_group, scanned_at
+  */
+
+  let all    = [];
+  let active = "ALL";
+
+  async function load() {
+    try {
+      const res = await fetch("/api/history");
+      all = await res.json();
+    } catch (e) {
+      all = [];
+    }
+    document.getElementById("loadingState").style.display = "none";
+    document.getElementById("histTable").style.display    = "table";
+    render();
+  }
+
+  function render() {
+    const filtered = active === "ALL"
+      ? all
+      : all.filter(r => r.blood_group === active);
+
+    // Subtitle
+    document.getElementById("pageSubtitle").textContent =
+      `${all.length} prediction${all.length !== 1 ? "s" : ""} recorded`;
+
+    // Summary chips
+    const counts = {};
+    all.forEach(r => counts[r.blood_group] = (counts[r.blood_group] || 0) + 1);
+    const top    = Object.entries(counts).sort((a,b) => b[1] - a[1])[0];
+    document.getElementById("summaryRow").innerHTML = [
+      `<span class="chip">Total <strong>${all.length}</strong></span>`,
+      top ? `<span class="chip">Most common <strong>${top[0]}</strong></span>` : "",
+      `<span class="chip">Groups detected <strong>${Object.keys(counts).length}</strong></span>`,
+    ].join("");
+
+    // Filter pills
+    const groups = [...new Set(all.map(r => r.blood_group))].sort();
+    document.getElementById("filterRow").innerHTML =
+      `<button class="filter-pill ${active==="ALL"?"active":""}" onclick="setFilter('ALL',this)">All</button>` +
+      groups.map(g =>
+        `<button class="filter-pill ${active===g?"active":""}" onclick="setFilter('${g}',this)">
+           ${g} <span style="opacity:.5">${counts[g]||0}</span>
+         </button>`
+      ).join("");
+
+    // Table body
+    const tbody = document.getElementById("histBody");
+    const empty = document.getElementById("emptyState");
+
+    if (filtered.length === 0) {
+      tbody.innerHTML      = "";
+      empty.style.display  = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    tbody.innerHTML = filtered.map((r, i) => `
+      <tr style="animation-delay:${i * 0.03}s">
+        <td class="td-name">${esc(r.name || "—")}</td>
+        <td class="td-age td-muted">${r.age || "—"}</td>
+        <td class="td-gender td-muted">${esc(r.gender || "—")}</td>
+        <td><span class="blood-pill">${esc(r.blood_group)}</span></td>
+        <td class="td-email td-trunc" title="${esc(r.email||"")}">${esc(r.email || "—")}</td>
+        <td class="td-time td-muted">${formatDate(r.scanned_at)}</td>
+        <td>
+          <button class="del-btn" onclick="del('${r.result_id}')" title="Delete record">✕</button>
+        </td>
+      </tr>`
+    ).join("");
+  }
+
+  function setFilter(group, btn) {
+    active = group;
+    document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render();
+  }
+
+  async function del(id) {
+    if (!confirm("Delete this record?")) return;
+    try {
+      await fetch(`/api/history/${id}`, { method: "DELETE" });
+      all = all.filter(r => r.result_id !== id);
+      render();
+    } catch (e) {
+      alert("Failed to delete: " + e);
+    }
+  }
+
+  async function clearAll() {
+    if (!confirm("Delete ALL prediction history? This cannot be undone.")) return;
+    try {
+      await fetch("/api/history/clear", { method: "DELETE" });
+      all = [];
+      render();
+    } catch (e) {
+      alert("Failed to clear: " + e);
+    }
+  }
+
+  function exportCSV() {
+    if (!all.length) { alert("Nothing to export."); return; }
+    const header = "Name,Age,Gender,Blood Group,Email,Date";
+    const rows   = all.map(r =>
+      [`"${(r.name||"").replace(/"/g,'""')}"`,
+       r.age || "",
+       r.gender || "",
+       r.blood_group,
+       r.email || "",
+       formatDate(r.scanned_at)
+      ].join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const a   = Object.assign(document.createElement("a"), {
+      href:     URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
+      download: `ridgescan_history_${Date.now()}.csv`
+    });
+    a.click();
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString("en-IN", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    } catch { return iso; }
+  }
+
+  load();
+</script>
+</body>
+</html>

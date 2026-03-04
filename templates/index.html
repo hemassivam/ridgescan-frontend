@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RidgeScan — Blood Group Detection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:      #F97316;
+      --orange-dark: #EA6500;
+      --orange-light:#FFF3E8;
+      --orange-mid:  #FED7AA;
+      --text:        #1C1917;
+      --text-muted:  #78716C;
+      --border:      #E7E5E4;
+      --bg:          #FAFAF8;
+      --white:       #FFFFFF;
+      --radius:      14px;
+      --shadow:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+      --shadow-lg:   0 4px 24px rgba(249,115,22,0.15), 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 18px; font-weight: 700; color: var(--text);
+      text-decoration: none;
+    }
+    .nav-brand-dot {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--orange);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link {
+      padding: 7px 16px; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted); text-decoration: none;
+      transition: all 0.15s;
+    }
+    .nav-link:hover  { background: var(--orange-light); color: var(--orange-dark); }
+    .nav-link.active { background: var(--orange-light); color: var(--orange); font-weight: 600; }
+
+    /* ── Page ─────────────────────────────────────────────────── */
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 40px; }
+
+    .section-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--orange); color: white;
+      font-size: 13px; font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .section-sub   { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    /* ── Patient fields ───────────────────────────────────────── */
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .field-group        { display: flex; flex-direction: column; gap: 5px; }
+    .field-group.full   { grid-column: 1 / -1; }
+
+    .field-label {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .field-required { color: var(--orange); }
+
+    .field-input,
+    .field-select {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px; color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+    .field-input:focus,
+    .field-select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
+    }
+    .field-input.error {
+      border-color: #DC2626;
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+    }
+
+    .form-divider {
+      height: 1px; background: var(--border); margin: 4px 0 24px;
+    }
+
+    /* ── Upload zone ──────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--orange);
+      background: var(--orange-light);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-icon {
+      width: 52px; height: 52px; margin: 0 auto 14px;
+      background: var(--orange-light); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; transition: transform 0.2s;
+    }
+    .upload-zone:hover .upload-icon { transform: scale(1.08); }
+    .upload-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+    .upload-sub   { font-size: 13px; color: var(--text-muted); }
+    .upload-formats { margin-top: 12px; display: flex; gap: 6px; justify-content: center; }
+    .fmt {
+      font-size: 11px; font-weight: 600; padding: 3px 9px;
+      border-radius: 4px; background: var(--border);
+      color: var(--text-muted); letter-spacing: 0.04em;
+    }
+
+    /* ── File preview — name only, no image (privacy) ─────────── */
+    #previewSection { display: none; margin-top: 14px; }
+    .preview-inner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .preview-file-icon {
+      width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0;
+      background: var(--orange-light); border: 1px solid var(--orange-mid);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .preview-info { flex: 1; min-width: 0; }
+    .preview-name {
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .preview-size { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .preview-remove {
+      font-size: 12px; color: var(--text-muted); flex-shrink: 0;
+      background: none; border: none; cursor: pointer;
+      text-decoration: underline; transition: color 0.15s;
+    }
+    .preview-remove:hover { color: #DC2626; }
+
+    /* ── Analyze button ───────────────────────────────────────── */
+    .btn-analyze {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; margin-top: 20px; padding: 14px;
+      background: var(--orange); color: white; border: none;
+      border-radius: 10px; font-family: 'Outfit', sans-serif;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-analyze:hover:not(:disabled) {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(249,115,22,0.35);
+    }
+    .btn-analyze:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result ───────────────────────────────────────────────── */
+    #resultSection { display: none; }
+
+    .result-card {
+      background: var(--white);
+      border: 2px solid var(--orange-mid);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-card { animation: slideIn 0.4s ease; }
+
+    .result-header {
+      background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+      padding: 36px 32px; text-align: center; color: white;
+    }
+    .result-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; opacity: 0.82; margin-bottom: 10px;
+    }
+    .result-group {
+      font-size: 88px; font-weight: 800; line-height: 1; letter-spacing: -2px;
+    }
+    .result-group-name { margin-top: 8px; font-size: 14px; opacity: 0.88; }
+
+    /* Patient strip */
+    .result-patient {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 24px;
+    }
+    .rp-item { }
+    .rp-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;
+    }
+    .rp-value { font-size: 15px; font-weight: 600; }
+
+    /* Description */
+    .result-desc {
+      padding: 20px 28px; border-bottom: 1px solid var(--border);
+    }
+    .result-desc-inner {
+      background: var(--orange-light); border-radius: 8px;
+      padding: 14px 16px; font-size: 13px; color: #92400E; line-height: 1.7;
+    }
+
+    /* Actions */
+    .result-actions {
+      padding: 20px 28px; display: flex; gap: 10px;
+    }
+    .btn-new {
+      flex: 1; padding: 11px; background: var(--orange); color: white;
+      border: none; border-radius: 8px; font-family: 'Outfit', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-new:hover { background: var(--orange-dark); }
+    .btn-hist {
+      flex: 1; padding: 11px; background: white; color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 500;
+      cursor: pointer; text-decoration: none;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-hist:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 560px) {
+      nav { padding: 0 16px; }
+      .page { padding: 32px 16px 60px; }
+      .card { padding: 20px; }
+      .fields-grid { grid-template-columns: 1fr; }
+      .result-group { font-size: 64px; }
+      .result-header, .result-patient,
+      .result-desc, .result-actions { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-dot">🫆</div>
+    RidgeScan
+  </a>
+  <div class="nav-links">
+    <a href="/"        class="nav-link active">Predict</a>
+    <a href="/history" class="nav-link">History</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="steps">
+
+    <!-- ── STEP 1 ──────────────────────────────────────────────── -->
+    <div id="uploadStep">
+      <div class="section-num">1</div>
+      <div class="section-title">Patient Details &amp; Fingerprint</div>
+      <div class="section-sub">Enter the person's information, then upload the fingerprint image.</div>
+
+      <div class="card">
+
+        <!-- Patient fields -->
+        <div class="fields-grid">
+
+          <div class="field-group full">
+            <label class="field-label">Full Name <span class="field-required">*</span></label>
+            <input class="field-input" id="uName" type="text" placeholder="e.g. Hemavathi S" autocomplete="off" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Age</label>
+            <input class="field-input" id="uAge" type="number" min="1" max="120" placeholder="e.g. 24" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Gender</label>
+            <select class="field-select" id="uGender">
+              <option value="">Select (optional)</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="field-group full">
+            <label class="field-label">Email</label>
+            <input class="field-input" id="uEmail" type="email" placeholder="optional" />
+          </div>
+
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- Upload zone -->
+        <div class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.bmp" />
+          <div class="upload-icon">🫆</div>
+          <div class="upload-title">Drop fingerprint image here</div>
+          <div class="upload-sub">or click to browse your device</div>
+          <div class="upload-formats">
+            <span class="fmt">JPG</span>
+            <span class="fmt">PNG</span>
+            <span class="fmt">BMP</span>
+          </div>
+        </div>
+
+        <!--
+          File name shown, but NO image preview.
+          The image is sent directly to the API and never stored locally.
+        -->
+        <div id="previewSection">
+          <div class="preview-inner">
+            <div class="preview-file-icon">🫆</div>
+            <div class="preview-info">
+              <div class="preview-name" id="previewName">—</div>
+              <div class="preview-size" id="previewSize">—</div>
+            </div>
+            <button class="preview-remove" onclick="resetUpload()">Remove</button>
+          </div>
+        </div>
+
+        <button class="btn-analyze" id="analyzeBtn" onclick="analyze()" disabled>
+          <div class="spinner" id="spinner"></div>
+          <span id="btnLabel">Fill in name and select a file</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── STEP 2 ──────────────────────────────────────────────── -->
+    <div id="resultSection">
+      <div class="section-num">2</div>
+      <div class="section-title">Prediction Result</div>
+      <div class="section-sub">Blood group identified from the fingerprint ridge pattern.</div>
+
+      <div class="result-card">
+
+        <div class="result-header">
+          <div class="result-eyebrow">Predicted Blood Group</div>
+          <div class="result-group"      id="rGroup">—</div>
+          <div class="result-group-name" id="rGroupName">—</div>
+        </div>
+
+        <div class="result-patient">
+          <div class="rp-item">
+            <div class="rp-label">Name</div>
+            <div class="rp-value" id="rName">—</div>
+          </div>
+          <div class="rp-item" id="rAgeBlock">
+            <div class="rp-label">Age</div>
+            <div class="rp-value" id="rAge">—</div>
+          </div>
+          <div class="rp-item" id="rGenderBlock">
+            <div class="rp-label">Gender</div>
+            <div class="rp-value" id="rGender">—</div>
+          </div>
+        </div>
+
+        <div class="result-desc">
+          <div class="result-desc-inner" id="rDesc">—</div>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn-new"  onclick="resetAll()">Analyze Another</button>
+          <a      class="btn-hist" href="/history">View History →</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+</div><!-- /page -->
+
+<script>
+  let selectedFile = null;
+
+  const BLOOD_INFO = {
+    "A+":  { name: "Blood Group A, Rh Positive",  desc: "<strong>A+</strong> is the second most common blood type. Compatible donors: A+, A−, O+, O−." },
+    "A-":  { name: "Blood Group A, Rh Negative",  desc: "<strong>A−</strong> can donate red blood cells to all A and AB blood types." },
+    "B+":  { name: "Blood Group B, Rh Positive",  desc: "<strong>B+</strong> can receive blood from B+, B−, O+, and O− donors." },
+    "B-":  { name: "Blood Group B, Rh Negative",  desc: "<strong>B−</strong> is a rare blood type. Can donate to B and AB groups." },
+    "AB+": { name: "Blood Group AB, Rh Positive", desc: "<strong>AB+</strong> is the universal recipient — can receive from any donor." },
+    "AB-": { name: "Blood Group AB, Rh Negative", desc: "<strong>AB−</strong> is the rarest blood type, found in about 1% of people." },
+    "O+":  { name: "Blood Group O, Rh Positive",  desc: "<strong>O+</strong> is the most common blood type, present in ~38% of the population." },
+    "O-":  { name: "Blood Group O, Rh Negative",  desc: "<strong>O−</strong> is the universal donor — red blood cells can be given to anyone." },
+  };
+
+  // ── Drag & drop ──────────────────────────────────────────────
+  const dropZone = document.getElementById("dropZone");
+  dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault(); dropZone.classList.remove("drag-over");
+    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+  document.getElementById("fileInput").addEventListener("change", e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  // Re-evaluate button whenever name changes
+  document.getElementById("uName").addEventListener("input", updateBtn);
+
+  function setFile(file) {
+    selectedFile = file;
+    document.getElementById("previewName").textContent = file.name;
+    document.getElementById("previewSize").textContent = (file.size / 1024).toFixed(1) + " KB";
+    document.getElementById("previewSection").style.display = "block";
+    document.getElementById("resultSection").style.display  = "none";
+    updateBtn();
+  }
+
+  function updateBtn() {
+    const hasName = document.getElementById("uName").value.trim().length > 0;
+    const hasFile = selectedFile !== null;
+    const btn     = document.getElementById("analyzeBtn");
+    btn.disabled  = !(hasName && hasFile);
+    document.getElementById("btnLabel").textContent =
+      !hasFile ? "Select a fingerprint image to continue" :
+      !hasName ? "Enter patient name to continue" :
+                 "Analyze Fingerprint";
+  }
+
+  function resetUpload() {
+    selectedFile = null;
+    document.getElementById("fileInput").value = "";
+    document.getElementById("previewSection").style.display = "none";
+    updateBtn();
+  }
+
+  function resetAll() {
+    resetUpload();
+    ["uName","uAge","uEmail"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("uGender").value = "";
+    document.getElementById("resultSection").style.display = "none";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ── Analyze ──────────────────────────────────────────────────
+  async function analyze() {
+    const name = document.getElementById("uName").value.trim();
+    if (!name) {
+      const el = document.getElementById("uName");
+      el.classList.add("error");
+      el.focus();
+      setTimeout(() => el.classList.remove("error"), 2000);
+      return;
+    }
+    if (!selectedFile) return;
+
+    const btn     = document.getElementById("analyzeBtn");
+    const spinner = document.getElementById("spinner");
+    btn.disabled = true;
+    spinner.style.display = "block";
+    document.getElementById("btnLabel").textContent = "Analyzing…";
+
+    // Build form — image bytes sent straight through, never stored
+    const form = new FormData();
+    form.append("file",   selectedFile);
+    form.append("name",   name);
+    form.append("age",    document.getElementById("uAge").value    || "");
+    form.append("gender", document.getElementById("uGender").value || "");
+    form.append("email",  document.getElementById("uEmail").value  || "");
+
+    try {
+      const res  = await fetch("/api/predict", { method: "POST", body: form });
+      const data = await res.json();
+      if (data.error) { alert("Error: " + data.error); return; }
+      showResult(data, name);
+    } catch (err) {
+      alert("Request failed: " + err);
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = "none";
+      document.getElementById("btnLabel").textContent = "Analyze Again";
+    }
+  }
+
+  function showResult(data, name) {
+    const pred = data.prediction;
+    const info = BLOOD_INFO[pred] || { name: "Blood Group " + pred, desc: "Identified from fingerprint scan." };
+
+    document.getElementById("rGroup").textContent    = pred;
+    document.getElementById("rGroupName").textContent = info.name;
+    document.getElementById("rDesc").innerHTML        = info.desc;
+    document.getElementById("rName").textContent      = name;
+
+    const age    = document.getElementById("uAge").value;
+    const gender = document.getElementById("uGender").value;
+    document.getElementById("rAge").textContent    = age    || "—";
+    document.getElementById("rGender").textContent = gender || "—";
+
+    const section = document.getElementById("resultSection");
+    section.style.display = "block";
+    // Re-trigger animation
+    const card = section.querySelector(".result-card");
+    card.style.animation = "none";
+    void card.offsetWidth;
+    card.style.animation = "";
+
+    setTimeout(() => section.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }
+</script>
+</body>
+</html>
