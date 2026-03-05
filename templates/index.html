@@ -529,7 +529,10 @@
     try {
       const res  = await fetch("/api/predict", { method: "POST", body: form });
       const data = await res.json();
-      if (data.error) { alert("Error: " + data.error); return; }
+      if (!res.ok || data.error || data.detail) {
+        alert("Error: " + (data.detail || data.error || "Unknown error"));
+        return;
+      }
       showResult(data, name);
     } catch (err) {
       alert("Request failed: " + err);
